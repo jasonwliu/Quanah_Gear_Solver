@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quanah Hologram Skill Solver — MapleStory</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script defer src="solver.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">◈</div>
+        <div>
+          <h1>Quanah Hologram Solver</h1>
+          <p class="subtitle">Find a 6-piece gear loadout (1 per slot) matching all 18 Hologram skill lines</p>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <span id="storage-status" class="storage-pill" title="Saved automatically in browser localStorage">
+          <span class="dot"></span> Saved in Browser
+        </span>
+        <button type="button" id="btn-sample" class="btn btn-secondary">Load Sample</button>
+        <button type="button" id="btn-io" class="btn btn-secondary">Import / Export</button>
+        <button type="button" id="btn-clear-all" class="btn btn-danger-ghost">Clear All</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-layout">
+    <!-- Left Column: Input & Saved Gear -->
+    <section class="panel-column">
+      <div class="card">
+        <div class="card-header">
+          <h2 id="form-title">Add Hologram Gear</h2>
+          <span class="badge-muted">3 lines per item</span>
+        </div>
+
+        <form id="gear-form" class="gear-form" autocomplete="off">
+          <div class="form-group">
+            <label class="form-label">Gear Type</label>
+            <div id="gear-type-pills" class="gear-type-pills" role="radiogroup" aria-label="Gear Type">
+              <!-- Populated by app.js -->
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="item-name" class="form-label">Label <span class="label-opt">(optional)</span></label>
+            <input
+              type="text"
+              id="item-name"
+              class="input"
+              maxlength="40"
+              placeholder="e.g. Eternal Hat #1, Boss Drop..."
+            />
+          </div>
+
+          <div class="lines-grid">
+            <div class="form-group">
+              <label for="line-1" class="form-label">Hologram Line 1</label>
+              <select id="line-1" class="select" required></select>
+            </div>
+            <div class="form-group">
+              <label for="line-2" class="form-label">Hologram Line 2</label>
+              <select id="line-2" class="select" required></select>
+            </div>
+            <div class="form-group">
+              <label for="line-3" class="form-label">Hologram Line 3</label>
+              <select id="line-3" class="select" required></select>
+            </div>
+          </div>
+
+          <div id="form-error" class="form-error" hidden></div>
+
+          <div class="form-actions">
+            <button type="submit" id="btn-submit" class="btn btn-primary">Add Gear</button>
+            <button type="button" id="btn-cancel-edit" class="btn btn-secondary" hidden>Cancel</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="card inventory-card">
+        <div class="card-header">
+          <h2>Saved Gear List <span id="inventory-count" class="count-badge">0</span></h2>
+          <span id="equiv-summary" class="equiv-summary-badge" hidden></span>
+        </div>
+
+        <div id="filter-tabs" class="filter-tabs" role="tablist" aria-label="Filter gear by type">
+          <!-- Populated by app.js -->
+        </div>
+
+        <div id="gear-list" class="gear-list">
+          <!-- Populated by app.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Requirements & Solver Output -->
+    <section class="panel-column">
+      <div class="card">
+        <div class="card-header">
+          <h2>Target Hologram Skills</h2>
+          <span id="target-summary" class="badge-muted">0 / 18 covered</span>
+        </div>
+        <div id="target-grid" class="target-grid">
+          <!-- Populated by app.js -->
+        </div>
+      </div>
+
+      <div class="card solver-card">
+        <div class="card-header">
+          <h2>Solver Results</h2>
+          <div id="solution-nav" class="solution-nav" hidden>
+            <button type="button" id="btn-prev-sol" class="btn btn-icon" aria-label="Previous solution">‹</button>
+            <span id="solution-counter" class="solution-counter">1 / 1</span>
+            <button type="button" id="btn-next-sol" class="btn btn-icon" aria-label="Next solution">›</button>
+          </div>
+        </div>
+
+        <div id="solver-status" class="solver-status">
+          <!-- Populated by app.js -->
+        </div>
+
+        <div id="solver-results" class="solver-results">
+          <!-- Populated by app.js -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Import / Export Modal -->
+  <div id="io-modal" class="modal-backdrop" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="io-modal-title">
+      <div class="modal-header">
+        <h3 id="io-modal-title">Import / Export Gear List</h3>
+        <button type="button" id="btn-close-io" class="btn btn-icon" aria-label="Close modal">✕</button>
+      </div>
+      <p class="modal-desc">
+        Your gear list is automatically saved in your browser's local storage. Use JSON below to back up or share your items.
+      </p>
+      <textarea id="io-textarea" class="io-textarea" rows="10" spellcheck="false"></textarea>
+      <div id="io-error" class="form-error" hidden></div>
+      <div class="modal-actions">
+        <button type="button" id="btn-copy-io" class="btn btn-secondary">Copy JSON</button>
+        <button type="button" id="btn-import-io" class="btn btn-primary">Import &amp; Replace</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
