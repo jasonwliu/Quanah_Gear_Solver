@@ -16,14 +16,16 @@
   const SKILL_CLASS_MAP = {
     'Registry': 'skill-registry',
     'Damage': 'skill-damage',
-    'Crit': 'skill-crit',
+    'Boss Damage': 'skill-bossdmg',
+    'Ignore Defense': 'skill-ied',
+    'None': 'skill-none',
     'Attack': 'skill-attack',
     'Dimension Leap': 'skill-dimension',
     'White Hole': 'skill-whitehole',
     'Crit Damage': 'skill-critdmg',
     'Warrior Skill': 'skill-warrior',
-    'Archer Skill': 'skill-archer',
-    'Mage Skill': 'skill-mage',
+    'Bowman Skill': 'skill-bowman',
+    'Magician Skill': 'skill-magician',
     'Thief Skill': 'skill-thief',
     'Pirate Skill': 'skill-pirate',
   };
@@ -169,7 +171,7 @@
 
       if (otherSkills.length > 0) {
         const otherGroup = document.createElement('optgroup');
-        otherGroup.label = 'Other Hologram Skills';
+        otherGroup.label = 'Other / Empty';
         for (const s of otherSkills) {
           const opt = document.createElement('option');
           opt.value = s.id;

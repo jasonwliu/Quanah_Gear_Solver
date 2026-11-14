@@ -14,8 +14,8 @@ Finds a 6-piece gear combination (**1 of each gear type**: `Hat`, `Top`, `Bottom
 - **3×** `Attack`
 - **1×** `Crit Damage`
 - **1×** `Warrior Skill`
-- **1×** `Archer Skill`
-- **1×** `Mage Skill`
+- **1×** `Bowman Skill`
+- **1×** `Magician Skill`
 - **1×** `Thief Skill`
 - **1×** `Pirate Skill`
 

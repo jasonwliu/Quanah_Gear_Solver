@@ -21,7 +21,7 @@
     'Cape',
   ];
 
-  // Master list of all known Hologram skills (includes legacy Damage/Crit for storage compatibility)
+  // Master list of all known Hologram skills
   const ALL_SKILLS = [
     { id: 'Dimension Leap', label: 'Dimension Leap', category: 'special' },
     { id: 'White Hole', label: 'White Hole', category: 'special' },
@@ -29,12 +29,14 @@
     { id: 'Attack', label: 'Attack', category: 'core' },
     { id: 'Crit Damage', label: 'Crit Damage', category: 'stat' },
     { id: 'Warrior Skill', label: 'Warrior Skill', category: 'class' },
-    { id: 'Archer Skill', label: 'Archer Skill', category: 'class' },
-    { id: 'Mage Skill', label: 'Mage Skill', category: 'class' },
+    { id: 'Bowman Skill', label: 'Bowman Skill', category: 'class' },
+    { id: 'Magician Skill', label: 'Magician Skill', category: 'class' },
     { id: 'Thief Skill', label: 'Thief Skill', category: 'class' },
     { id: 'Pirate Skill', label: 'Pirate Skill', category: 'class' },
+    { id: 'Boss Damage', label: 'Boss Damage', category: 'other' },
+    { id: 'Ignore Defense', label: 'Ignore Defense', category: 'other' },
     { id: 'Damage', label: 'Damage', category: 'other' },
-    { id: 'Crit', label: 'Crit', category: 'other' },
+    { id: 'None', label: 'None', category: 'none' },
   ];
 
   const ALL_SKILL_IDS = ALL_SKILLS.map((s) => s.id);
@@ -44,9 +46,17 @@
   const SKILL_ALIASES = {
     'registry': 'Registry',
     'damage': 'Damage',
-    'crit': 'Crit',
-    'critical rate': 'Crit',
-    'crit rate': 'Crit',
+    'dmg': 'Damage',
+    'boss damage': 'Boss Damage',
+    'boss dmg': 'Boss Damage',
+    'boss': 'Boss Damage',
+    'bd': 'Boss Damage',
+    'ignore defense': 'Ignore Defense',
+    'ignore def': 'Ignore Defense',
+    'ied': 'Ignore Defense',
+    'none': 'None',
+    'empty': 'None',
+    '-': 'None',
     'attack': 'Attack',
     'att': 'Attack',
     'dimension leap': 'Dimension Leap',
@@ -59,10 +69,14 @@
     'critical damage': 'Crit Damage',
     'warrior skill': 'Warrior Skill',
     'warrior': 'Warrior Skill',
-    'archer skill': 'Archer Skill',
-    'archer': 'Archer Skill',
-    'mage skill': 'Mage Skill',
-    'mage': 'Mage Skill',
+    'bowman skill': 'Bowman Skill',
+    'bowman': 'Bowman Skill',
+    'archer skill': 'Bowman Skill',
+    'archer': 'Bowman Skill',
+    'magician skill': 'Magician Skill',
+    'magician': 'Magician Skill',
+    'mage skill': 'Magician Skill',
+    'mage': 'Magician Skill',
     'thief skill': 'Thief Skill',
     'thief': 'Thief Skill',
     'pirate skill': 'Pirate Skill',
@@ -94,16 +108,16 @@
       { id: 'Attack', label: 'Attack', target: 3, category: 'core' },
       { id: 'Crit Damage', label: 'Crit Damage', target: 1, category: 'stat' },
       { id: 'Warrior Skill', label: 'Warrior Skill', target: 1, category: 'class' },
-      { id: 'Archer Skill', label: 'Archer Skill', target: 1, category: 'class' },
-      { id: 'Mage Skill', label: 'Mage Skill', target: 1, category: 'class' },
+      { id: 'Bowman Skill', label: 'Bowman Skill', target: 1, category: 'class' },
+      { id: 'Magician Skill', label: 'Magician Skill', target: 1, category: 'class' },
       { id: 'Thief Skill', label: 'Thief Skill', target: 1, category: 'class' },
       { id: 'Pirate Skill', label: 'Pirate Skill', target: 1, category: 'class' },
     ],
     sampleItems: [
       { name: 'Cosmic Hat A', gearType: 'Hat', lines: ['Dimension Leap', 'White Hole', 'Warrior Skill'] },
       { name: 'Cosmic Hat B (equiv)', gearType: 'Hat', lines: ['Warrior Skill', 'Dimension Leap', 'White Hole'] },
-      { name: 'Cosmic Top A', gearType: 'Top', lines: ['Dimension Leap', 'Registry', 'Mage Skill'] },
-      { name: 'Cosmic Bottom A', gearType: 'Bottom', lines: ['Dimension Leap', 'Attack', 'Archer Skill'] },
+      { name: 'Cosmic Top A', gearType: 'Top', lines: ['Dimension Leap', 'Registry', 'Magician Skill'] },
+      { name: 'Cosmic Bottom A', gearType: 'Bottom', lines: ['Dimension Leap', 'Attack', 'Bowman Skill'] },
       { name: 'Cosmic Gloves A', gearType: 'Gloves', lines: ['White Hole', 'Attack', 'Thief Skill'] },
       { name: 'Cosmic Shoes A', gearType: 'Shoes', lines: ['White Hole', 'Registry', 'Pirate Skill'] },
       { name: 'Cosmic Cape A', gearType: 'Cape', lines: ['Registry', 'Attack', 'Crit Damage'] },
@@ -246,7 +260,8 @@
       for (const gt of GEAR_TYPES) {
         const map = new Map();
         for (const entry of byGear[gt]) {
-          if (exceedsAnyTarget(entry.vec)) continue;
+          const vecSum = entry.vec.reduce((sum, v) => sum + v, 0);
+          if (vecSum !== 3 || exceedsAnyTarget(entry.vec)) continue;
           const key = vectorKey(entry.vec);
           if (!map.has(key)) {
             map.set(key, { vec: entry.vec, items: [entry.item] });
@@ -279,6 +294,7 @@
 
         if (depth === orderedGears.length) {
           totalCombinationsChecked += 1;
+          if (!remaining.every((r) => r === 0)) return;
           const itemsByGear = {};
           const alternativesByGear = {};
           for (let i = 0; i < orderedGears.length; i++) {
