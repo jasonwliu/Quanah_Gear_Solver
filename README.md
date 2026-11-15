@@ -22,7 +22,7 @@ Finds a 6-piece gear combination (**1 of each gear type**: `Hat`, `Top`, `Bottom
 ## Features
 
 - **Exact 18/18 Solver:** Finds all valid 6-piece combinations (up to 50) using backtracking with slot ordering and deduplication.
-- **Partial Fallback (1 of Each Skill First):** When no exact 18/18 match exists yet, finds the best available loadout prioritizing at least 1 instance of each of the 10 target skills first, then total target lines covered, then fewest overcapped/wasted lines, along with a missing/excess breakdown.
+- **Partial Fallback (3/3s First):** When no exact 18/18 match exists yet, finds the best available loadout prioritizing completing the 3/3 core skills (`Dimension Leap`, `White Hole`, `Registry`, `Attack`) first, then unique skill coverage, total target lines covered, and fewest overcapped/wasted lines, along with a missing/excess breakdown.
 - **Equivalent Gear Detection:** Automatically identifies saved items of the same gear type that share the exact same 3 Hologram skills regardless of line order.
 - **Browser Persistence & Import/Export:** Automatically saves your gear list in `localStorage` and supports JSON import/export plus one-click sample data.
 

@@ -359,9 +359,11 @@
   /**
    * Find the best partial loadout (at most 1 item per gear type).
    * Objective order:
-   *   1. Maximize distinct target skills with at least 1 instance (1 of each skill first)
-   *   2. Maximize total target skill lines covered (clamped at targetVector)
-   *   3. Minimize wasted / overcapped lines
+   *   1. Maximize completed 3/3 skills (target === 3 skills reaching >= 3)
+   *   2. Maximize total lines covered toward 3/3 skills
+   *   3. Maximize distinct target skills with at least 1 instance
+   *   4. Maximize total target skill lines covered (clamped at targetVector)
+   *   5. Minimize wasted / overcapped lines
    */
   function findBestPartial(byGear, targetVector, skillIds, totalTarget) {
     const groupedByGear = {};
@@ -382,6 +384,17 @@
       (a, b) => groupedByGear[a].length - groupedByGear[b].length
     );
 
+    const threeTargetIndices = [];
+    let totalCoreTarget = 0;
+    for (let i = 0; i < targetVector.length; i++) {
+      if (targetVector[i] === 3) {
+        threeTargetIndices.push(i);
+        totalCoreTarget += 3;
+      }
+    }
+
+    let bestCompleted3 = -1;
+    let bestCoreCovered = -1;
     let bestDistinct = -1;
     let bestScore = -1;
     let bestWaste = Infinity;
@@ -391,10 +404,16 @@
     const chosen = new Array(activeGears.length).fill(null);
 
     function computeStats(vec) {
+      let completed3 = 0;
+      let coreCovered = 0;
       let distinctCovered = 0;
       let covered = 0;
       let waste = 0;
       for (let i = 0; i < vec.length; i++) {
+        if (targetVector[i] === 3) {
+          if (vec[i] >= 3) completed3 += 1;
+          coreCovered += Math.min(vec[i], 3);
+        }
         if (vec[i] > 0 && targetVector[i] > 0) {
           distinctCovered += 1;
         }
@@ -405,10 +424,16 @@
           waste += vec[i] - targetVector[i];
         }
       }
-      return { distinctCovered, covered, waste };
+      return { completed3, coreCovered, distinctCovered, covered, waste };
     }
 
     function isBetter(stats) {
+      if (stats.completed3 !== bestCompleted3) {
+        return stats.completed3 > bestCompleted3;
+      }
+      if (stats.coreCovered !== bestCoreCovered) {
+        return stats.coreCovered > bestCoreCovered;
+      }
       if (stats.distinctCovered !== bestDistinct) {
         return stats.distinctCovered > bestDistinct;
       }
@@ -418,10 +443,34 @@
       return stats.waste < bestWaste;
     }
 
+    function maxAdditionalCompleted3(counts, remainingLines) {
+      const needs = [];
+      for (let i = 0; i < threeTargetIndices.length; i++) {
+        const idx = threeTargetIndices[i];
+        if (counts[idx] < 3) {
+          needs.push(3 - counts[idx]);
+        }
+      }
+      needs.sort((a, b) => a - b);
+      let budget = remainingLines;
+      let extra = 0;
+      for (let i = 0; i < needs.length; i++) {
+        if (budget >= needs[i]) {
+          budget -= needs[i];
+          extra += 1;
+        } else {
+          break;
+        }
+      }
+      return extra;
+    }
+
     function searchPartial(depth) {
       if (depth === activeGears.length) {
         const stats = computeStats(currentCounts);
         if (isBetter(stats)) {
+          bestCompleted3 = stats.completed3;
+          bestCoreCovered = stats.coreCovered;
           bestDistinct = stats.distinctCovered;
           bestScore = stats.covered;
           bestWaste = stats.waste;
@@ -430,33 +479,65 @@
         return;
       }
 
-      const { distinctCovered: curDistinct, covered: curCovered } = computeStats(currentCounts);
+      const {
+        completed3: curCompleted3,
+        coreCovered: curCoreCovered,
+        distinctCovered: curDistinct,
+        covered: curCovered,
+      } = computeStats(currentCounts);
       const remainingLines = (activeGears.length - depth) * 3;
-      const missingDistinct = skillIds.length - curDistinct;
-      const maxPossibleDistinct = curDistinct + Math.min(missingDistinct, remainingLines);
+      const maxPossibleCompleted3 = curCompleted3 + maxAdditionalCompleted3(currentCounts, remainingLines);
+      const maxPossibleCoreCovered = Math.min(totalCoreTarget, curCoreCovered + remainingLines);
+      const maxPossibleDistinct = curDistinct + Math.min(skillIds.length - curDistinct, remainingLines);
       const maxPossibleCovered = Math.min(totalTarget, curCovered + remainingLines);
 
-      if (maxPossibleDistinct < bestDistinct) return;
-      if (maxPossibleDistinct === bestDistinct && maxPossibleCovered < bestScore) return;
+      if (maxPossibleCompleted3 < bestCompleted3) return;
+      if (maxPossibleCompleted3 === bestCompleted3 && maxPossibleCoreCovered < bestCoreCovered) return;
+      if (
+        maxPossibleCompleted3 === bestCompleted3 &&
+        maxPossibleCoreCovered === bestCoreCovered &&
+        maxPossibleDistinct < bestDistinct
+      ) return;
+      if (
+        maxPossibleCompleted3 === bestCompleted3 &&
+        maxPossibleCoreCovered === bestCoreCovered &&
+        maxPossibleDistinct === bestDistinct &&
+        maxPossibleCovered < bestScore
+      ) return;
 
       const gt = activeGears[depth];
       const groups = groupedByGear[gt];
 
-      // Rank groups by new distinct skills gained first, then total target lines gained
+      // Rank groups by 3/3 completions, core lines gained, distinct skills gained, then total lines gained
       const ranked = groups
         .map((group) => {
+          let completes3Gain = 0;
+          let coreGain = 0;
           let distinctGain = 0;
           let totalGain = 0;
           for (let s = 0; s < group.vec.length; s++) {
-            if (group.vec[s] > 0 && currentCounts[s] === 0 && targetVector[s] > 0) {
+            const added = group.vec[s];
+            if (targetVector[s] === 3) {
+              if (currentCounts[s] < 3 && currentCounts[s] + added >= 3) {
+                completes3Gain += 1;
+              }
+              coreGain += Math.min(3 - currentCounts[s], added);
+            }
+            if (added > 0 && currentCounts[s] === 0 && targetVector[s] > 0) {
               distinctGain += 1;
             }
             const need = Math.max(0, targetVector[s] - currentCounts[s]);
-            totalGain += Math.min(need, group.vec[s]);
+            totalGain += Math.min(need, added);
           }
-          return { group, distinctGain, totalGain };
+          return { group, completes3Gain, coreGain, distinctGain, totalGain };
         })
-        .sort((a, b) => (b.distinctGain - a.distinctGain) || (b.totalGain - a.totalGain));
+        .sort(
+          (a, b) =>
+            (b.completes3Gain - a.completes3Gain) ||
+            (b.coreGain - a.coreGain) ||
+            (b.distinctGain - a.distinctGain) ||
+            (b.totalGain - a.totalGain)
+        );
 
       for (let g = 0; g < ranked.length; g++) {
         const { group } = ranked[g];
@@ -505,6 +586,9 @@
     }
 
     return {
+      completed3: bestCompleted3,
+      totalThreeTargets: threeTargetIndices.length,
+      coreCovered: bestCoreCovered,
       distinctCovered: bestDistinct,
       totalDistinct: skillIds.length,
       covered: bestScore,

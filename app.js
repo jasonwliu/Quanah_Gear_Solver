@@ -569,17 +569,17 @@
       return;
     }
 
-    // No exact solution: show closest partial match prioritizing 1 of each skill first
+    // No exact solution: show closest partial match prioritizing 3/3s first
     els.solutionNav.hidden = true;
     const partial = result.bestPartial;
 
     const banner = document.createElement('div');
     banner.className = 'status-banner warning';
-    const coverageText = `${partial.distinctCovered}/${partial.totalDistinct} unique skills covered (${partial.covered}/${result.totalTarget} total lines)`;
+    const coverageText = `${partial.completed3}/${partial.totalThreeTargets} 3/3s filled · ${partial.distinctCovered}/${partial.totalDistinct} unique skills · ${partial.covered}/${result.totalTarget} total lines`;
     if (result.missingGearTypes.length > 0) {
-      banner.textContent = `No exact 18/18 match yet — missing slots: ${result.missingGearTypes.join(', ')}. Best loadout (prioritizing 1 of each skill): ${coverageText}.`;
+      banner.textContent = `No exact 18/18 match yet — missing slots: ${result.missingGearTypes.join(', ')}. Best loadout (prioritizing 3/3s first): ${coverageText}.`;
     } else {
-      banner.textContent = `No exact 18/18 match exists with current gear. Best loadout (prioritizing 1 of each skill): ${coverageText}.`;
+      banner.textContent = `No exact 18/18 match exists with current gear. Best loadout (prioritizing 3/3s first): ${coverageText}.`;
     }
     els.solverStatus.appendChild(banner);
 
